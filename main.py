@@ -2,7 +2,10 @@ import psutil
 import time
 
 KEYWORDS = [
-    'proton',
+    'Proton',
+    'ProtonVPN',
+    'Proton VPN',
+    'ProtonVPN Service',
     'mullvad',
     'nord',
     'openvpn',
