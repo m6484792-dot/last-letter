@@ -15,20 +15,28 @@ KEYWORDS = [
     'windscribe',
     'pia',
     'hotspot',
+    'wireguard',
     'tunnelbear'
 ]
 
 def kill_processes_by_keywords(keywords):
-    keywords = [k.lower() for k in keywords]
-    for proc in psutil.process_iter(['pid', 'name']):
-        try:
-            pname = proc.info['name']
-            if pname and any(k in pname.lower() for k in keywords):
-                proc.kill()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            continue
+    keywords_lower = [k.lower() for k in keywords]
+    while True:
+        found = False
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                pname = proc.info['name']
+                if pname and any(k in pname.lower() for k in keywords_lower):
+                    found = True
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=1)
+                    except psutil.TimeoutExpired:
+                        proc.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+        if not found:
+            break
+        time.sleep(0.5)
 
-for _ in range(5):
-    kill_processes_by_keywords(KEYWORDS)
-    time.sleep(1)
-
+kill_processes_by_keywords(KEYWORDS)
