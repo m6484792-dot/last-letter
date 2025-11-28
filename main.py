@@ -1,7 +1,8 @@
 import psutil
+import time
 
 KEYWORDS = [
-    'Proton',
+    'proton',
     'mullvad',
     'nord',
     'openvpn',
@@ -11,8 +12,7 @@ KEYWORDS = [
     'windscribe',
     'pia',
     'hotspot',
-    'tunnelbear',
-    'vpn'
+    'tunnelbear'
 ]
 
 def kill_processes_by_keywords(keywords):
@@ -25,5 +25,7 @@ def kill_processes_by_keywords(keywords):
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             continue
 
-if __name__ == "__main__":
+for _ in range(5):
     kill_processes_by_keywords(KEYWORDS)
+    time.sleep(1)
+
